@@ -1456,6 +1456,10 @@ export class TileGeometryCreator {
         material: THREE.Material,
         terrainColor: number
     ) {
+        if (!technique.map) {
+            return;
+        }
+
         if (technique.displacementMap === undefined) {
             // Render terrain using the given color.
             const stdMaterial = material as MapMeshStandardMaterial;
