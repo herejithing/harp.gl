@@ -906,10 +906,9 @@ export class Tile implements CachedResource {
                 });
             })
             .catch(tileLoaderState => {
-                if (
-                    tileLoaderState !== TileLoaderState.Canceled &&
-                    tileLoaderState !== TileLoaderState.Failed
-                ) {
+                if (tileLoaderState === TileLoaderState.Failed) {
+                    this.dispose();
+                } else if (tileLoaderState !== TileLoaderState.Canceled) {
                     logger.error("Unknown error" + tileLoaderState);
                 }
             });
