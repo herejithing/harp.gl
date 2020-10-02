@@ -278,8 +278,31 @@ export namespace MapViewUtils {
 
         //FIXME(HARP-11926): For globe tilt in the map center is different from the tilt in the rotation center,
         //hence the clamped tilt is too conservative.
-        const clampedDeltaTilt =
+        let clampedDeltaTilt =
             MathUtils.clamp(deltaTilt + currentTilt, 0, maxTiltAngle) - currentTilt;
+        // Minor optimization, don't apply delta if too small.
+        if (Math.abs(clampedDeltaTilt) <= Number.EPSILON) {
+            return;
+        }
+
+        // We need to not only check the tilt at the mapTargetWorld, but also at the
+        // rotationTargetWorld, the reason for this is because the tilt at the rotationTargetWorld
+        // may reach 90 degrees, whilst the rotation at the center of the screen never reaches the
+        // maxTiltAngle. As an example, imagine our max tilt angle is 89 degrees and that the angle
+        // between the center / rotation target is 5 degrees and that the current tilt to the
+        // mapTargetWorld is 84.5 degrees, the triangle from the rotaionTargetWorld -> camera ->
+        // mapTargetWorld then has 3 angles, 5 degrees, 90 + 84.5, that then puts the angle between
+        // the camera and the world plane at 0.5 degrees (or as a tilt, 89.5), which is outside the
+        // tilt limit of 89.
+        const dirToRotationTarget = cache.vector3[0];
+        dirToRotationTarget.copy(camera.position).sub(rotationTargetWorld);
+        dirToRotationTarget.normalize();
+        const currentTiltRotationCenter = dirToRotationTarget.angleTo(mapTargetNormal);
+        // Set the delta in such a way that the final angle will be maxTiltAngle
+        if (currentTiltRotationCenter + deltaTilt > maxTiltAngle) {
+            clampedDeltaTilt = maxTiltAngle - currentTiltRotationCenter;
+        }
+        // Minor optimization, don't apply delta if too small.
         if (Math.abs(clampedDeltaTilt) <= Number.EPSILON) {
             return;
         }
